@@ -10,11 +10,14 @@ import android.graphics.Color
 import android.graphics.Point
 import android.graphics.drawable.ColorDrawable
 import android.location.Geocoder
+import android.os.Build
 import android.os.Bundle
 import android.os.Looper
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -49,6 +52,7 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -67,6 +71,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	private var currentPolyline: Polyline? = null
 	private var currentLatLng: LatLng? = null
 
+	private val requestNotificationPermission =
+		registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+			if (isGranted) {
+				// Permission granted
+				Log.d("MainActivity", "Notification permission granted")
+			} else {
+				// Permission denied
+				Log.d("MainActivity", "Notification permission denied")
+			}
+		}
+
 	private lateinit var binding: ActivityMainBinding
 
 	override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,6 +89,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 		binding = ActivityMainBinding.inflate(layoutInflater)
 		setContentView(binding.root)
+
+		FirebaseMessaging.getInstance().token
+			.addOnCompleteListener { task ->
+				if (!task.isSuccessful) {
+					// Failed to get token
+					Log.w("FCM", "Fetching FCM token failed", task.exception)
+					return@addOnCompleteListener
+				}
+
+				// Get new FCM token
+				val token = task.result
+				Log.d("FCM", "FCM Token: $token")
+			}
 
 		fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
@@ -84,6 +112,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		prefs = PrefsHelper(this)
 
 		setupClickListeners()
+
+		// Check and request permission on start
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+			if (ContextCompat.checkSelfPermission(
+					this,
+					Manifest.permission.POST_NOTIFICATIONS
+				) != PackageManager.PERMISSION_GRANTED
+			) {
+				requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+			}
+		}
 	}
 
 	override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -357,7 +396,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		// 5. Deserialize into PointsOfInterest
 		return Http.json.decodeFromString(rawArea)
 	}
-
 
 	private fun addMarkers(locations: List<Locations>?) {
 		if (locations.isNullOrEmpty()) return

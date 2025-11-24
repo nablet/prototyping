@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "533501567596",
+    "project_id": "hackaton-2025-cf930",
+    "storage_bucket": "hackaton-2025-cf930.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533501567596:android:282e32402e245e86c8ae49",
+        "android_client_info": {
+          "package_name": "com.cloudstaff.myapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFHE0KTnT0D09z8ow_gsX3Nh2IeBznDe4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
