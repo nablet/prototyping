@@ -13,7 +13,6 @@ import android.os.Bundle
 import android.os.Looper
 import android.view.View
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -63,7 +62,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	private lateinit var prefs: PrefsHelper
 	private var currentPolyline: Polyline? = null
 	private var currentLatLng: LatLng? = null
-
 
 	private lateinit var binding: ActivityMainBinding
 
@@ -252,7 +250,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 					binding.prb.visibility = View.INVISIBLE
 				} catch (e: Exception) {
 					binding.prb.visibility = View.INVISIBLE
-					e.printStackTrace()
+					toast("An error has occurred: ${e.message}")
 				}
 			}
 
@@ -290,7 +288,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 					binding.prb.visibility = View.INVISIBLE
 				} catch (e: Exception) {
 					binding.prb.visibility = View.INVISIBLE
-					e.printStackTrace()
+					toast("An error has occurred: ${e.message}")
 				}
 			}
 		} else {
@@ -327,7 +325,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 					binding.prb.visibility = View.INVISIBLE
 				} catch (e: Exception) {
 					binding.prb.visibility = View.INVISIBLE
-					e.printStackTrace()
+					toast("An error has occurred: ${e.message}")
 				}
 			}
 		} else {
@@ -336,22 +334,22 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		}
 	}
 
-	private fun addMarkers(evacCenters: List<Locations>?) {
-		if (evacCenters.isNullOrEmpty()) return
+	private fun addMarkers(locations: List<Locations>?) {
+		if (locations.isNullOrEmpty()) return
 
 		val boundsBuilder = LatLngBounds.Builder()
 
-		evacCenters.forEach { evacCenter ->
-			val position = LatLng(evacCenter.coordinates.lat, evacCenter.coordinates.lng)
+		locations.forEach { loc ->
+			val position = LatLng(loc.coordinates.lat, loc.coordinates.lng)
 
 			val marker = gmap.addMarker(
 				MarkerOptions()
 					.position(position)
-					.title(evacCenter.building)
-					.snippet(evacCenter.address)
+					.title(loc.building)
+					.snippet(loc.address)
 			)
 
-			marker?.tag = evacCenter
+			marker?.tag = loc
 			boundsBuilder.include(position)
 		}
 
@@ -400,6 +398,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		val response = client.newCall(req).execute()
 
 		val result = response.body?.string() ?: return@withContext emptyList<LatLng>()
+		println("HAHAHAkdog result=$result")
 
 		val root = JSONObject(result)
 		val routes = root.getJSONArray("routes")
