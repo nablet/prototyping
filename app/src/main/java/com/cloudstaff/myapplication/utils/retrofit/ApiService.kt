@@ -11,7 +11,6 @@ import retrofit2.http.Body
 import retrofit2.http.Headers
 import retrofit2.http.POST
 
-// Optional: Add bearer token automatically
 val token = "app-RUajyaiMG0aoPHM4bWRMpNTW"
 val client = OkHttpClient.Builder()
 	.addInterceptor { chain: Interceptor.Chain ->
@@ -54,7 +53,7 @@ data class Inputs(
 
 data class Payload(
 	val inputs: Inputs,
-	val user: String
+	val user: String = "erwinf-user-1"
 )
 
 @Serializable
@@ -72,12 +71,13 @@ data class Area(
 
 @Serializable
 data class PointsOfInterest(
-	val nearest_evacuation_centers: List<Locations>? = null,
-	val relief_goods_centers: List<Locations>? = null,
-	val hospitals: List<Locations>? = null,
+	val nearest_evacuation: List<Locations>? = null,
+	val nearest_relief_goods: List<Locations>? = null,
+	val nearest_hospitals: List<Locations>? = null,
 )
 @Serializable
 data class Locations(
+	val name: String,
 	val building: String,
 	val address: String,
 	val coordinates: Coordinates,

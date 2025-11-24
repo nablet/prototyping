@@ -9,10 +9,12 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Point
 import android.graphics.drawable.ColorDrawable
+import android.location.Geocoder
 import android.os.Bundle
 import android.os.Looper
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -54,6 +56,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.util.Locale
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -222,26 +225,32 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		)
 	}
 
+	private fun getAddressFromCurrentLatLng(): Pair<String?, String?> {
+		val geocoder = Geocoder(this, Locale.getDefault())
+
+		val latLng = currentLatLng ?: return Pair(null, null)
+		val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+
+		if (addresses.isNullOrEmpty()) return Pair(null, null)
+
+		val address = addresses[0]
+
+		val city = address.locality         // e.g. "Angeles City"
+		val barangay = address.subLocality  // e.g. "Mining" or "Pulung Maragul"
+
+		return Pair(city, barangay)
+	}
 
 	private fun fetchEvacCenters() {
 		if (hasInternetConnection(this)) {
 			lifecycleScope.launch {
 				binding.prb.visibility = View.VISIBLE
 				try {
-					val payload = Payload(
-						inputs = Inputs(
-							type = "evacuation",
-							barangay = "mining",
-							city = "Pampanga",
-							coordinate = "14.5995, 120.9842"
-						),
-						user = "erwinf-user-1"
+					val data = fetchPointsOfInterest(
+						currentLatLng = currentLatLng,
+						type = "evacuation"
 					)
-
-					val response = api.postData(payload)
-					val rawArea = response.data.outputs.area
-					val area = Http.json.decodeFromString<PointsOfInterest>(rawArea)
-					val evacCenters = area.nearest_evacuation_centers ?: return@launch
+					val evacCenters = data.nearest_evacuation ?: return@launch
 
 					prefs.addEvacuationCenters(evacCenters)
 
@@ -266,20 +275,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 				binding.prb.visibility = View.VISIBLE
 
 				try {
-					val payload = Payload(
-						inputs = Inputs(
-							type = "relief goods",
-							barangay = "mining",
-							city = "Pampanga",
-							coordinate = "14.5995, 120.9842"
-						),
-						user = "erwinf-user-1"
+					val data = fetchPointsOfInterest(
+						currentLatLng = currentLatLng,
+						type = "relief goods"
 					)
-
-					val response = api.postData(payload)
-					val rawArea = response.data.outputs.area
-					val area = Http.json.decodeFromString<PointsOfInterest>(rawArea)
-					val reliefGoods = area.relief_goods_centers ?: return@launch
+					val reliefGoods = data.nearest_relief_goods ?: return@launch
 
 					prefs.addReliefGoodsOps(reliefGoods)
 
@@ -303,20 +303,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 				binding.prb.visibility = View.VISIBLE
 
 				try {
-					val payload = Payload(
-						inputs = Inputs(
-							type = "hospitals",
-							barangay = "mining",
-							city = "Pampanga",
-							coordinate = "14.5995, 120.9842"
-						),
-						user = "erwinf-user-1"
+					val data = fetchPointsOfInterest(
+						currentLatLng = currentLatLng,
+						type = "hospitals"
 					)
-
-					val response = api.postData(payload)
-					val rawArea = response.data.outputs.area
-					val area = Http.json.decodeFromString<PointsOfInterest>(rawArea)
-					val hospitals = area.hospitals ?: return@launch
+					val hospitals = data.nearest_hospitals ?: return@launch
 
 					prefs.addHospitals(hospitals)
 
@@ -333,6 +324,39 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 			addMarkers(hospitals)
 		}
 	}
+
+	suspend fun fetchPointsOfInterest(
+		currentLatLng: LatLng?,
+		type: String
+	): PointsOfInterest {
+
+		if (currentLatLng == null) {
+			throw Exception("Current location unavailable")
+		}
+
+		// 1. Get city + barangay
+		val (city, barangay) = getAddressFromCurrentLatLng()
+
+		// 2. Build payload
+		val payload = Payload(
+			inputs = Inputs(
+				type = type, // e.g. "hospitals" or "evacuation"
+				barangay = barangay ?: "",
+				city = city ?: "",
+				coordinate = "${currentLatLng.latitude},${currentLatLng.longitude}"
+			)
+		)
+
+		// 3. Execute API call
+		val response = api.postData(payload)
+
+		// 4. Extract the 'area' field (which is a JSON string)
+		val rawArea = response.data.outputs.area
+
+		// 5. Deserialize into PointsOfInterest
+		return Http.json.decodeFromString(rawArea)
+	}
+
 
 	private fun addMarkers(locations: List<Locations>?) {
 		if (locations.isNullOrEmpty()) return
@@ -398,8 +422,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		val response = client.newCall(req).execute()
 
 		val result = response.body?.string() ?: return@withContext emptyList<LatLng>()
-		println("HAHAHAkdog result=$result")
-
 		val root = JSONObject(result)
 		val routes = root.getJSONArray("routes")
 		if (routes.length() == 0) return@withContext emptyList<LatLng>()
@@ -480,16 +502,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		}
 	}
 
-	private fun showLocationsBottomSheet(evac: Locations) {
+	private fun showLocationsBottomSheet(loc: Locations) {
 		val dialog = BottomSheetDialog(this)
 		val view = layoutInflater.inflate(R.layout.bottom_sheet, null)
 
 		dialog.window?.setDimAmount(0f)
 		dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
-		view.findViewById<TextView>(R.id.txtBuilding).text = evac.building
-		view.findViewById<TextView>(R.id.txtAddress).text = evac.address
-		view.findViewById<TextView>(R.id.txtDistance).text = "${evac.distance_km} km away"
+		view.findViewById<TextView>(R.id.txtBuilding).text = loc.name
+		view.findViewById<TextView>(R.id.txtAddress).text = loc.address
+		view.findViewById<TextView>(R.id.txtDistance).text = "${loc.distance_km} km away"
+		view.findViewById<TextView>(R.id.txtOccupancy).text = "Current occupants: ${loc.address.length}"
 
 		dialog.setContentView(view)
 		dialog.show()
@@ -510,7 +533,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 		settingsClient.checkLocationSettings(settingsRequest)
 			.addOnSuccessListener {
-				toast("Fetching your location...")
+				toast("Fetching your location...", Toast.LENGTH_SHORT)
 				enableMyLocation()
 			}
 			.addOnFailureListener { exception ->
