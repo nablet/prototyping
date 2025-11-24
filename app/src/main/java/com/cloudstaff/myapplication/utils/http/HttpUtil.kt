@@ -88,4 +88,12 @@ fun hasInternetConnection(context: Context): Boolean {
 	}
 }
 
+suspend fun httpGetNative(url: String): String = withContext(Dispatchers.IO) {
+	val conn = URL(url).openConnection() as HttpURLConnection
+	conn.requestMethod = "GET"
+
+	conn.inputStream.bufferedReader().use { it.readText() }
+}
+
+
 

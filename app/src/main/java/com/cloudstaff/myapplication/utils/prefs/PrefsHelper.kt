@@ -2,7 +2,7 @@ package com.cloudstaff.myapplication.utils.prefs
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.cloudstaff.myapplication.ui.EvacuationCenter
+import com.cloudstaff.myapplication.utils.retrofit.Locations
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -42,16 +42,39 @@ class PrefsHelper(context: Context, prefName: String = "app_prefs") {
 
 
 	/** Add multiple evacuation centers */
-	fun addEvacuationCenters(centers: List<EvacuationCenter>) {
-		val list: MutableList<EvacuationCenter> = getEvacuationCenters()?.toMutableList() ?: mutableListOf()
+	fun addEvacuationCenters(centers: List<Locations>) {
+		val list: MutableList<Locations> = getEvacuationCenters()?.toMutableList() ?: mutableListOf()
 		list.addAll(centers)
 		put("evacuation_centers", list)
 	}
 
 	/** Get all evacuation centers */
-	fun getEvacuationCenters(): List<EvacuationCenter>? {
+	fun getEvacuationCenters(): List<Locations>? {
 		return get("evacuation_centers")
 	}
+
+	/** Relief goods */
+	fun addReliefGoodsOps(centers: List<Locations>) {
+		val list: MutableList<Locations> = getEvacuationCenters()?.toMutableList() ?: mutableListOf()
+		list.addAll(centers)
+		put("evacuation_centers", list)
+	}
+
+	fun getReliefGoodsOps(): List<Locations>? {
+		return get("relief_goods_ops")
+	}
+
+	/** Hospitals */
+	fun addHospitals(centers: List<Locations>) {
+		val list: MutableList<Locations> = getEvacuationCenters()?.toMutableList() ?: mutableListOf()
+		list.addAll(centers)
+		put("hospitals", list)
+	}
+
+	fun getHospitals(): List<Locations>? {
+		return get("hospitals")
+	}
+
 
 	/** Remove all evacuation centers */
 	fun clearEvacuationCenters() {

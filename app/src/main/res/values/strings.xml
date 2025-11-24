@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">My Application</string>
+    <string name="evacuation_center">Evacuation Centers</string>
+    <string name="relief_goods">Relief Goods</string>
+    <string name="Hospitals">Hospitals</string>
+    <string name="search">Search</string>
 </resources>
