@@ -30,6 +30,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
 import android.util.Log
+import com.google.gson.GsonBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -190,7 +191,6 @@ class CameraActivity : AppCompatActivity() {
         binding.loading.visibility = View.VISIBLE
         try {
             val payload = WorkflowPayload(
-                user = "erwinf-user-1",
                 inputs = WorkflowInputs(
                     picture = WorkflowPicture(
                         upload_file_id = workflowId
@@ -198,7 +198,8 @@ class CameraActivity : AppCompatActivity() {
                 )
             )
 
-            val response = api.runWorkflow(workflowId, payload)
+            Log.d("PAYLOAD", payload.toString())
+            val response = api.runWorkflow( payload)
 
             println("Workflow executed successfully!")
             println("Output area: ${response.data.outputs.result}")
@@ -222,7 +223,9 @@ class CameraActivity : AppCompatActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
             println("Output area: ${e.localizedMessage}")
+            
             Log.e("runWorkflow", workflowId)
+            Log.e("runWorkflow", e.localizedMessage)
 
             binding.loading.visibility = View.INVISIBLE
             Toast.makeText(

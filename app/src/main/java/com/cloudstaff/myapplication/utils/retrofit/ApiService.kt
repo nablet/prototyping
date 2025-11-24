@@ -1,6 +1,7 @@
 package com.cloudstaff.myapplication.utils.retrofit
 
 
+import android.util.Log
 import kotlinx.serialization.Serializable
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -17,6 +18,11 @@ import retrofit2.http.Path
 val token = "app-RUajyaiMG0aoPHM4bWRMpNTW"
 val client = OkHttpClient.Builder()
 	.addInterceptor { chain: Interceptor.Chain ->
+        // ✅ Log full request URL
+        val original = chain.request()
+        Log.e("API_REQUEST", "URL: ${original.url}")
+        Log.e("API_REQUEST", "Method: ${original.method}")
+
 		val request = chain.request().newBuilder()
 			.addHeader("Authorization", "Bearer $token")
 			.build()
@@ -53,9 +59,8 @@ interface ApiService {
     ): UploadFileResponse
 
     @Headers("Content-Type: application/json")
-    @POST("v1/workflows/{workflowId}/run")
+    @POST("v1/workflows/8c94e679-bcf0-4777-b38a-2c3bb0640d85/run")
     suspend fun runWorkflow(
-        @Path("workflowId") workflowId: String,
         @Body payload: WorkflowPayload
     ): WorkflowResponse
 }
