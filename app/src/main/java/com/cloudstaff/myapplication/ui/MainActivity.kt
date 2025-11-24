@@ -447,13 +447,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	}
 
 	private fun addMarkers(locations: List<Locations>?) {
-		if (locations.isNullOrEmpty()) return
-
-		val boundsBuilder = LatLngBounds.Builder()
-
-		if (locations.isNotEmpty()) {
+		if (locations.isNullOrEmpty()) {
+			toast("No locations found")
+			return
+		} else {
 			gmap.clear()
 		}
+
+		val boundsBuilder = LatLngBounds.Builder()
 
 		locations.forEach { loc ->
 			val position = LatLng(loc.coordinates.lat, loc.coordinates.lng)
