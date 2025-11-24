@@ -7,5 +7,6 @@ fun Activity.toast(
 	message: String,
 	duration: Int = Toast.LENGTH_LONG
 ) {
+	println("[TOAST] $message")
 	Toast.makeText(this, message, duration).show()
 }
