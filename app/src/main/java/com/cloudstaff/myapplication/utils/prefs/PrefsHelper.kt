@@ -76,8 +76,17 @@ class PrefsHelper(context: Context, prefName: String = "app_prefs") {
 	}
 
 
-	/** Remove all evacuation centers */
+	/** Remove all */
 	fun clearEvacuationCenters() {
 		prefs.edit().remove("evacuation_centers").apply()
 	}
+
+	fun clearReliefGoodsOps() {
+		prefs.edit().remove("relief_goods_ops").apply()
+	}
+
+	fun clearHospitals() {
+		prefs.edit().remove("hospitals").apply()
+	}
+
 }

@@ -6,8 +6,15 @@ import android.app.Activity
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.Point
+import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.location.Geocoder
 import android.os.Build
@@ -25,6 +32,7 @@ import androidx.lifecycle.lifecycleScope
 import com.cloudstaff.myapplication.BuildConfig
 import com.cloudstaff.myapplication.R
 import com.cloudstaff.myapplication.databinding.ActivityMainBinding
+import com.cloudstaff.myapplication.utils.dpToPx
 import com.cloudstaff.myapplication.utils.http.Http
 import com.cloudstaff.myapplication.utils.http.hasInternetConnection
 import com.cloudstaff.myapplication.utils.prefs.PrefsHelper
@@ -46,6 +54,9 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
@@ -70,6 +81,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	private lateinit var prefs: PrefsHelper
 	private var currentPolyline: Polyline? = null
 	private var currentLatLng: LatLng? = null
+	private var showOccupants: Boolean = true
 
 	private val requestNotificationPermission =
 		registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -139,48 +151,76 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 	private fun setupClickListeners() {
 		binding.evacCenters.setOnClickListener {
+			showOccupants = true
 			fetchEvacCenters()
 		}
 
 		binding.reliefGoodsOps.setOnClickListener {
+			showOccupants = false
 			fetchReliefGoodsOps()
 		}
 
 		binding.hospitals.setOnClickListener {
+			showOccupants = true
 			fetchHospitals()
 		}
 	}
 
 	override fun onMapReady(googleMap: GoogleMap) {
 		gmap = googleMap
-		gmap.uiSettings.isCompassEnabled = true
-		gmap.uiSettings.isZoomControlsEnabled = true
-		gmap.uiSettings.isMyLocationButtonEnabled = true
-		gmap.uiSettings.isRotateGesturesEnabled = true
+		gmap.apply {
+			uiSettings.isCompassEnabled = true
+			uiSettings.isZoomControlsEnabled = true
+			uiSettings.isMyLocationButtonEnabled = true
+			uiSettings.isRotateGesturesEnabled = true
+			uiSettings.isTiltGesturesEnabled = true
+			setPadding(0, 80.dpToPx(), 0, 0)
+
+			if (ContextCompat.checkSelfPermission(
+					this@MainActivity,
+					Manifest.permission.ACCESS_FINE_LOCATION
+				) == PackageManager.PERMISSION_GRANTED
+			) {
+				isMyLocationEnabled = true
+			}
+		}
 
 		requestLocationPermission()
 
 		gmap.setOnMarkerClickListener { marker ->
-			val evac = marker.tag as? Locations ?: return@setOnMarkerClickListener false
-			val destination = LatLng(evac.coordinates.lat, evac.coordinates.lng)
+			val loc = marker.tag as? Locations ?: return@setOnMarkerClickListener false
+			val destination = LatLng(loc.coordinates.lat, loc.coordinates.lng)
 
 			// Draw route
 			drawRouteTo(destination)
 
 			// Show info window
 			marker.showInfoWindow()
-			showLocationsBottomSheet(evac)
+			showLocationsBottomSheet(loc)
 
-			// Move camera so info window is fully visible
-			val offsetPixels = 150 // adjust based on info window height
-			val projection = gmap.projection
-			val markerPoint = projection.toScreenLocation(marker.position)
-			val targetPoint = Point(markerPoint.x, markerPoint.y - offsetPixels)
-			val targetLatLng = projection.fromScreenLocation(targetPoint)
-			gmap.animateCamera(CameraUpdateFactory.newLatLng(targetLatLng))
+			// Move camera so info window is fully visible, after layout
+			binding.map.post {
+				val offsetPixels = 150 // adjust based on info window height
+				val projection = gmap.projection
+				val markerPoint = projection.toScreenLocation(marker.position)
+				val targetPoint = Point(markerPoint.x, markerPoint.y - offsetPixels)
+				val targetLatLng = projection.fromScreenLocation(targetPoint)
 
-			false
+				val currentZoom = gmap.cameraPosition.zoom
+				val currentTilt = gmap.cameraPosition.tilt
+				val cameraPosition = CameraPosition.Builder()
+					.target(targetLatLng)
+					.zoom(currentZoom)
+					.tilt(currentTilt)
+					.bearing(1f) // small bearing to show compass
+					.build()
+
+				gmap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
+			}
+
+			true // consume click
 		}
+
 
 		gmap.setOnInfoWindowClickListener { marker ->
 			val center = marker.tag as? Locations
@@ -227,10 +267,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 			fusedLocationClient.lastLocation.addOnSuccessListener { location ->
 				if (location != null) {
 					currentLatLng = LatLng(location.latitude, location.longitude)
-					gmap.animateCamera(
-						CameraUpdateFactory
-							.newLatLngZoom(currentLatLng ?: return@addOnSuccessListener, 16f)
-					)
+					val cameraPosition = CameraPosition.Builder()
+						.target(currentLatLng ?: return@addOnSuccessListener)
+						.zoom(16f)
+						.bearing(1f)
+						.tilt(0f)
+						.build()
+					gmap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
 				} else {
 					requestSingleLocation()
 				}
@@ -282,6 +325,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	}
 
 	private fun fetchEvacCenters() {
+		gmap.clear()
 		if (hasInternetConnection(this)) {
 			lifecycleScope.launch {
 				binding.prb.visibility = View.VISIBLE
@@ -292,6 +336,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 					)
 					val evacCenters = data.nearest_evacuation ?: return@launch
 
+					prefs.clearEvacuationCenters()
 					prefs.addEvacuationCenters(evacCenters)
 
 					addMarkers(evacCenters)
@@ -310,6 +355,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	}
 
 	private fun fetchReliefGoodsOps() {
+		gmap.clear()
 		if (hasInternetConnection(this)) {
 			lifecycleScope.launch {
 				binding.prb.visibility = View.VISIBLE
@@ -321,6 +367,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 					)
 					val reliefGoods = data.nearest_relief_goods ?: return@launch
 
+					prefs.clearReliefGoodsOps()
 					prefs.addReliefGoodsOps(reliefGoods)
 
 					addMarkers(reliefGoods)
@@ -338,6 +385,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	}
 
 	private fun fetchHospitals() {
+		gmap.clear()
 		if (hasInternetConnection(this)) {
 			lifecycleScope.launch {
 				binding.prb.visibility = View.VISIBLE
@@ -349,6 +397,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 					)
 					val hospitals = data.nearest_hospitals ?: return@launch
 
+					prefs.clearHospitals()
 					prefs.addHospitals(hospitals)
 
 					addMarkers(hospitals)
@@ -405,25 +454,78 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		locations.forEach { loc ->
 			val position = LatLng(loc.coordinates.lat, loc.coordinates.lng)
 
+			// Create a custom marker with text and pin
+			val markerIcon = createMarkerWithTextAndPin(
+				text = loc.name ?: loc.building ?: "-",
+				pinResId = R.drawable.google_maps_pin,
+				pinWidth = 80,
+				pinHeight = 80
+			)
+
 			val marker = gmap.addMarker(
 				MarkerOptions()
 					.position(position)
-					.title(loc.building)
-					.snippet(loc.address)
+					.icon(markerIcon)
+					.anchor(0.5f, 1f)
 			)
 
 			marker?.tag = loc
 			boundsBuilder.include(position)
 		}
 
-		// Apply camera bounds after map layout is ready
 		gmap.setOnMapLoadedCallback {
 			val bounds = boundsBuilder.build()
-			val padding = 120 // padding around edges in pixels
+			val padding = 120
 			gmap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
 		}
 	}
 
+	private fun createMarkerWithTextAndPin(text: String, pinResId: Int, pinWidth: Int = 80, pinHeight: Int = 80): BitmapDescriptor {
+		// Paint for text
+		val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+			color = Color.BLACK
+			textSize = 40f
+			typeface = Typeface.DEFAULT_BOLD
+			textAlign = Paint.Align.CENTER
+		}
+
+		val textBounds = Rect()
+		textPaint.getTextBounds(text, 0, text.length, textBounds)
+
+		val padding = 20
+
+		// Resize pin icon
+		val originalPin = BitmapFactory.decodeResource(resources, pinResId)
+		val pinBitmap = Bitmap.createScaledBitmap(originalPin, pinWidth, pinHeight, true)
+
+		// Calculate total bitmap size
+		val width = maxOf(pinBitmap.width, textBounds.width() + padding * 2)
+		val height = pinBitmap.height + textBounds.height() + padding * 3
+
+		val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+		val canvas = Canvas(bitmap)
+
+		// Draw white rounded rectangle behind text
+		val rectPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+			color = Color.WHITE
+			style = Paint.Style.FILL
+		}
+		val rect = RectF(
+			(width - textBounds.width() - padding).toFloat() / 2,
+			0f,
+			(width + textBounds.width() + padding).toFloat() / 2,
+			textBounds.height() + padding.toFloat()
+		)
+		canvas.drawRoundRect(rect, 10f, 10f, rectPaint)
+
+		// Draw the text
+		canvas.drawText(text, width / 2f, textBounds.height().toFloat(), textPaint)
+
+		// Draw the resized pin below the text
+		canvas.drawBitmap(pinBitmap, (width - pinBitmap.width) / 2f, textBounds.height() + padding.toFloat(), null)
+
+		return BitmapDescriptorFactory.fromBitmap(bitmap)
+	}
 
 	suspend fun getRouteNewApi(
 		origin: LatLng,
@@ -510,6 +612,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 	private fun drawRouteTo(destination: LatLng) {
 		lifecycleScope.launch {
+			if (!hasInternetConnection(this@MainActivity)) return@launch
+
 			val origin = currentLatLng ?: return@launch
 
 			val points = getRouteNewApi(origin, destination, BuildConfig.MAPS_API_KEY)
@@ -550,7 +654,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		view.findViewById<TextView>(R.id.txtBuilding).text = loc.name ?: loc.building
 		view.findViewById<TextView>(R.id.txtAddress).text = loc.address
 		view.findViewById<TextView>(R.id.txtDistance).text = "${loc.distance_km} km away"
-		view.findViewById<TextView>(R.id.txtOccupancy).text = "Current occupants: ${loc.address.length}"
+		if (showOccupants) {
+			view.findViewById<TextView>(R.id.txtOccupancy).visibility = View.VISIBLE
+			view.findViewById<TextView>(R.id.txtOccupancy).text = "Current occupants: ${loc.address.length}"
+		} else {
+			view.findViewById<TextView>(R.id.txtOccupancy).visibility = View.GONE
+		}
 
 		dialog.setContentView(view)
 		dialog.show()
