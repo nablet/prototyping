@@ -1,11 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ListView
-        android:id="@+id/lv_sample"
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <Button
+            android:id="@+id/evac_centers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Evacuation Centers" />
+
+        <Button
+            android:id="@+id/relief_goods_ops"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Relief Goods" />
+
+        <Button
+            android:id="@+id/hospitals"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hospitals" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
