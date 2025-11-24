@@ -47,6 +47,7 @@ interface ApiService {
 }
 
 data class Inputs(
+	val type: String,
 	val barangay: String,
 	val city: String,
 	val coordinate: String

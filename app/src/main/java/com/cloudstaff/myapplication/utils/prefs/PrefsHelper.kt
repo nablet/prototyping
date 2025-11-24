@@ -53,6 +53,29 @@ class PrefsHelper(context: Context, prefName: String = "app_prefs") {
 		return get("evacuation_centers")
 	}
 
+	/** Relief goods */
+	fun addReliefGoodsOps(centers: List<Locations>) {
+		val list: MutableList<Locations> = getEvacuationCenters()?.toMutableList() ?: mutableListOf()
+		list.addAll(centers)
+		put("evacuation_centers", list)
+	}
+
+	fun getReliefGoodsOps(): List<Locations>? {
+		return get("relief_goods_ops")
+	}
+
+	/** Hospitals */
+	fun addHospitals(centers: List<Locations>) {
+		val list: MutableList<Locations> = getEvacuationCenters()?.toMutableList() ?: mutableListOf()
+		list.addAll(centers)
+		put("hospitals", list)
+	}
+
+	fun getHospitals(): List<Locations>? {
+		return get("hospitals")
+	}
+
+
 	/** Remove all evacuation centers */
 	fun clearEvacuationCenters() {
 		prefs.edit().remove("evacuation_centers").apply()

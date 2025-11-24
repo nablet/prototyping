@@ -79,20 +79,24 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		binding.evacCenters.setOnClickListener {
 			fetchEvacCenters()
 		}
+
+		binding.reliefGoodsOps.setOnClickListener {
+			fetchReliefGoodsOps()
+		}
+
+		binding.hospitals.setOnClickListener {
+			fetchHospitals()
+		}
 	}
 
 	override fun onMapReady(googleMap: GoogleMap) {
 		gmap = googleMap
+		gmap.uiSettings.isCompassEnabled = true
+		gmap.uiSettings.isZoomControlsEnabled = true
+		gmap.uiSettings.isMyLocationButtonEnabled = true
+		gmap.uiSettings.isRotateGesturesEnabled = true
 
 		requestLocationPermission()
-
-		gmap.setOnMapClickListener { latLng ->
-			// latLng is where the user tapped
-			Toast.makeText(this, "Clicked at: ${latLng.latitude}, ${latLng.longitude}", Toast.LENGTH_SHORT).show()
-
-			// Example: add a marker where the user clicked
-			gmap.addMarker(MarkerOptions().position(latLng).title("You clicked here"))
-		}
 
 		gmap.setOnMarkerClickListener { marker ->
 			val evac = marker.tag as? Locations ?: return@setOnMarkerClickListener false
@@ -115,8 +119,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 			false
 		}
-
-
 
 		gmap.setOnInfoWindowClickListener { marker ->
 			val center = marker.tag as? Locations
@@ -167,13 +169,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	}
 
 	private fun fetchEvacCenters() {
-
 		if (hasInternetConnection(this)) {
 			lifecycleScope.launch {
 				binding.prb.visibility = View.VISIBLE
 				try {
 					val payload = Payload(
 						inputs = Inputs(
+							type = "evacuation",
 							barangay = "mining",
 							city = "Pampanga",
 							coordinate = "14.5995, 120.9842"
@@ -183,8 +185,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 					val response = api.postData(payload)
 					val rawArea = response.data.outputs.area
-					val area = Http.json.decodeFromString<EvacCenters>(rawArea)
-					val evacCenters = area.evacuation_centers
+					val area = Http.json.decodeFromString<PointsOfInterest>(rawArea)
+					val evacCenters = area.nearest_evacuation_centers ?: return@launch
 
 					prefs.addEvacuationCenters(evacCenters)
 
@@ -198,8 +200,82 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 			}
 
 		} else {
-			val evacCenters = prefs.get<List<Locations>>("evac")
+			val evacCenters = prefs.getEvacuationCenters()
 			addMarkers(evacCenters)
+		}
+	}
+
+	private fun fetchReliefGoodsOps() {
+		if (hasInternetConnection(this)) {
+			lifecycleScope.launch {
+				binding.prb.visibility = View.VISIBLE
+
+				try {
+					val payload = Payload(
+						inputs = Inputs(
+							type = "relief goods",
+							barangay = "mining",
+							city = "Pampanga",
+							coordinate = "14.5995, 120.9842"
+						),
+						user = "erwinf-user-1"
+					)
+
+					val response = api.postData(payload)
+					val rawArea = response.data.outputs.area
+					val area = Http.json.decodeFromString<PointsOfInterest>(rawArea)
+					val reliefGoods = area.relief_goods_centers ?: return@launch
+
+					prefs.addReliefGoodsOps(reliefGoods)
+
+					addMarkers(reliefGoods)
+
+					binding.prb.visibility = View.INVISIBLE
+				} catch (e: Exception) {
+					binding.prb.visibility = View.INVISIBLE
+					e.printStackTrace()
+				}
+			}
+		} else {
+			val reliefGoods = prefs.getReliefGoodsOps()
+			addMarkers(reliefGoods)
+		}
+	}
+
+	private fun fetchHospitals() {
+		if (hasInternetConnection(this)) {
+			lifecycleScope.launch {
+				binding.prb.visibility = View.VISIBLE
+
+				try {
+					val payload = Payload(
+						inputs = Inputs(
+							type = "hospitals",
+							barangay = "mining",
+							city = "Pampanga",
+							coordinate = "14.5995, 120.9842"
+						),
+						user = "erwinf-user-1"
+					)
+
+					val response = api.postData(payload)
+					val rawArea = response.data.outputs.area
+					val area = Http.json.decodeFromString<PointsOfInterest>(rawArea)
+					val hospitals = area.hospitals ?: return@launch
+
+					prefs.addHospitals(hospitals)
+
+					addMarkers(hospitals)
+
+					binding.prb.visibility = View.INVISIBLE
+				} catch (e: Exception) {
+					binding.prb.visibility = View.INVISIBLE
+					e.printStackTrace()
+				}
+			}
+		} else {
+			val hospitals = prefs.getHospitals()
+			addMarkers(hospitals)
 		}
 	}
 
@@ -379,8 +455,10 @@ data class Area(
 )
 
 @Serializable
-data class EvacCenters(
-	val evacuation_centers: List<Locations>,
+data class PointsOfInterest(
+	val nearest_evacuation_centers: List<Locations>? = null,
+	val relief_goods_centers: List<Locations>? = null,
+	val hospitals: List<Locations>? = null,
 )
 @Serializable
 data class Locations(
