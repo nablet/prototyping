@@ -1,8 +1,10 @@
 package com.cloudstaff.myapplication.ui
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -14,8 +16,22 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.cloudstaff.myapplication.databinding.ActivityCameraBinding
+import com.cloudstaff.myapplication.utils.retrofit.UploadFileResponse
+import com.cloudstaff.myapplication.utils.retrofit.WorkflowInputs
+import com.cloudstaff.myapplication.utils.retrofit.WorkflowPayload
+import com.cloudstaff.myapplication.utils.retrofit.WorkflowPicture
+import com.cloudstaff.myapplication.utils.retrofit.api
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+
+import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class CameraActivity : AppCompatActivity() {
 
@@ -109,13 +125,124 @@ class CameraActivity : AppCompatActivity() {
         binding.btnCapture.visibility = View.VISIBLE
     }
 
+    private fun displayOutput() {
+        // Hide captured preview & buttons
+        binding.btnSubmit.visibility = View.GONE
+        binding.btnRetake.visibility = View.GONE
+
+        binding.tvWorkflowResult.visibility = View.VISIBLE
+    }
+
     private fun submitPhoto() {
         capturedImageFile?.let { file ->
             Toast.makeText(this, "Photo submitted: ${file.name}", Toast.LENGTH_SHORT).show()
-            // TODO: Upload file or send to server
 
-            // Optionally reset to camera preview
-            retakePhoto()
+            lifecycleScope.launch {
+                uploadFile(file)
+            }
+
         }
+    }
+
+    private suspend fun uploadFile(photoFile: File) {
+        binding.loading.visibility = View.VISIBLE
+        try {
+
+            val requestFile = photoFile.asRequestBody("image/png".toMediaTypeOrNull()) // adjust to "image/jpeg" if needed
+            val multipart = MultipartBody.Part.createFormData(
+                "file",
+                photoFile.name,
+                requestFile
+            )
+
+            // Call the API
+            val response = api.uploadFile(multipart)
+
+
+
+            binding.loading.visibility = View.INVISIBLE
+
+            lifecycleScope.launch {
+                runWorkflowForPhoto(response.id)
+            }
+
+            // Show success in a Toast
+            Log.e("uploadFile", response.toString())
+            Toast.makeText(
+                this@CameraActivity, // or requireContext() in Fragment
+                "Uploaded photo: ${response.name}\nURL: ${response.source_url}",
+                Toast.LENGTH_LONG
+            ).show()
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Log.e("TAG", "${e.localizedMessage}")
+            binding.loading.visibility = View.INVISIBLE
+            Toast.makeText(
+                this@CameraActivity, // or requireContext() in Fragment
+                "Photo upload failed: ${e.localizedMessage}",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private suspend fun runWorkflowForPhoto(workflowId: String) {
+        binding.loading.visibility = View.VISIBLE
+        try {
+            val payload = WorkflowPayload(
+                user = "erwinf-user-1",
+                inputs = WorkflowInputs(
+                    picture = WorkflowPicture(
+                        upload_file_id = workflowId
+                    )
+                )
+            )
+
+            val response = api.runWorkflow(workflowId, payload)
+
+            println("Workflow executed successfully!")
+            println("Output area: ${response.data.outputs.result}")
+            binding.loading.visibility = View.INVISIBLE
+
+            val resultText = response.data.outputs.result
+
+            // Update the TextView on the main thread using binding
+            withContext(Dispatchers.Main) {
+                binding.tvWorkflowResult.text = resultText
+            }
+
+            displayOutput()
+            
+            Toast.makeText(
+                this@CameraActivity, // or requireContext() if in Fragment
+                "Workflow executed successfully!",
+                Toast.LENGTH_SHORT
+            ).show()
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("Output area: ${e.localizedMessage}")
+            Log.e("runWorkflow", workflowId)
+
+            binding.loading.visibility = View.INVISIBLE
+            Toast.makeText(
+                this@CameraActivity,
+                "Workflow failed: ${e.localizedMessage}",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    private fun Context.getFileFromUri(uri: Uri, fileName: String): MultipartBody.Part {
+        val inputStream = contentResolver.openInputStream(uri)
+            ?: throw Exception("Unable to open URI")
+        val tempFile = File(cacheDir, fileName)
+        inputStream.use { input ->
+            tempFile.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+        val requestFile = tempFile.asRequestBody(contentResolver.getType(uri)?.toMediaTypeOrNull())
+        return MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
     }
 }
