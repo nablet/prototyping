@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.cloudstaff.myapplication.BuildConfig
 import com.cloudstaff.myapplication.R
 import com.cloudstaff.myapplication.databinding.ActivityMainBinding
 import com.cloudstaff.myapplication.utils.http.Http
@@ -473,8 +474,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		lifecycleScope.launch {
 			val origin = currentLatLng ?: return@launch
 
-			val points =
-				getRouteNewApi(origin, destination, "AIzaSyAkX3ogSvySOQhOkFWzDY7HogRHx_7cbsw")
+			val points = getRouteNewApi(origin, destination, BuildConfig.MAPS_API_KEY)
 			if (points.isEmpty()) {
 				toast("Error in calculating route, please try again")
 				return@launch
@@ -509,7 +509,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		dialog.window?.setDimAmount(0f)
 		dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
-		view.findViewById<TextView>(R.id.txtBuilding).text = loc.name
+		view.findViewById<TextView>(R.id.txtBuilding).text = loc.name ?: loc.building
 		view.findViewById<TextView>(R.id.txtAddress).text = loc.address
 		view.findViewById<TextView>(R.id.txtDistance).text = "${loc.distance_km} km away"
 		view.findViewById<TextView>(R.id.txtOccupancy).text = "Current occupants: ${loc.address.length}"

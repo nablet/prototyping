@@ -77,8 +77,8 @@ data class PointsOfInterest(
 )
 @Serializable
 data class Locations(
-	val name: String,
-	val building: String,
+	val name: String? = null,
+	val building: String? = null,
 	val address: String,
 	val coordinates: Coordinates,
 	val distance_km: Double,

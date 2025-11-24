@@ -19,6 +19,7 @@ android {
 		versionName = "1.0"
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+		buildConfigField("String", "MAPS_API_KEY", "\"AIzaSyAkX3ogSvySOQhOkFWzDY7HogRHx_7cbsw\"")
 	}
 
 	buildTypes {
@@ -40,6 +41,7 @@ android {
 	buildFeatures {
 		compose = true
 		viewBinding = true
+		buildConfig = true
 	}
 }
 
