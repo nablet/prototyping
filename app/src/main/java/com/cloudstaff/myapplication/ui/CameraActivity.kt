@@ -30,6 +30,8 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
 import android.util.Log
+import com.cloudstaff.myapplication.utils.retrofit.token
+import com.cloudstaff.myapplication.utils.retrofit.workflowToken
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -157,7 +159,7 @@ class CameraActivity : AppCompatActivity() {
             )
 
             // Call the API
-            val response = api.uploadFile(multipart)
+            val response = api.uploadFile("Bearer $token", multipart)
 
 
 
@@ -199,7 +201,7 @@ class CameraActivity : AppCompatActivity() {
             )
 
             Log.d("PAYLOAD", payload.toString())
-            val response = api.runWorkflow( payload)
+            val response = api.runWorkflow("Bearer $workflowToken", payload)
 
             println("Workflow executed successfully!")
             println("Output area: ${response.data.outputs.result}")

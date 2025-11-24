@@ -36,11 +36,13 @@ import com.cloudstaff.myapplication.utils.dpToPx
 import com.cloudstaff.myapplication.utils.http.Http
 import com.cloudstaff.myapplication.utils.http.hasInternetConnection
 import com.cloudstaff.myapplication.utils.prefs.PrefsHelper
+import com.cloudstaff.myapplication.utils.retrofit.ApiService
 import com.cloudstaff.myapplication.utils.retrofit.Inputs
 import com.cloudstaff.myapplication.utils.retrofit.Locations
 import com.cloudstaff.myapplication.utils.retrofit.Payload
 import com.cloudstaff.myapplication.utils.retrofit.PointsOfInterest
 import com.cloudstaff.myapplication.utils.retrofit.api
+import com.cloudstaff.myapplication.utils.retrofit.token
 import com.cloudstaff.myapplication.utils.toast
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -437,7 +439,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		)
 
 		// 3. Execute API call
-		val response = api.postData(payload)
+		val response = api.postData("Bearer $token", payload)
 
 		// 4. Extract the 'area' field (which is a JSON string)
 		val rawArea = response.data.outputs.area

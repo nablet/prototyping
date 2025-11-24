@@ -1,33 +1,22 @@
 package com.cloudstaff.myapplication.utils.retrofit
 
 
-import android.util.Log
 import kotlinx.serialization.Serializable
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
+import retrofit2.http.Header
 import retrofit2.http.Headers
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
-import retrofit2.http.Path
 
 val token = "app-RUajyaiMG0aoPHM4bWRMpNTW"
-val client = OkHttpClient.Builder()
-	.addInterceptor { chain: Interceptor.Chain ->
-        // ✅ Log full request URL
-        val original = chain.request()
-        Log.e("API_REQUEST", "URL: ${original.url}")
-        Log.e("API_REQUEST", "Method: ${original.method}")
+val workflowToken = "app-HRGp81c9ORQSH6ZFeJIjlPAF"
 
-		val request = chain.request().newBuilder()
-			.addHeader("Authorization", "Bearer $token")
-			.build()
-		chain.proceed(request)
-	}
+val client = OkHttpClient.Builder()
 	.addInterceptor(HttpLoggingInterceptor().apply {
 		setLevel(HttpLoggingInterceptor.Level.BODY)
 	})
@@ -50,17 +39,22 @@ interface ApiService {
 
 	@Headers("Content-Type: application/json")
 	@POST("v1/workflows/run")
-	suspend fun postData(@Body payload: Payload): DifyResponse
+	suspend fun postData(
+		@Header("Authorization") token: String,
+		@Body payload: Payload
+	): DifyResponse
 
     @Multipart
     @POST("v1/files/upload")
     suspend fun uploadFile(
+		@Header("Authorization") token: String,
         @Part file: okhttp3.MultipartBody.Part
     ): UploadFileResponse
 
     @Headers("Content-Type: application/json")
     @POST("v1/workflows/8c94e679-bcf0-4777-b38a-2c3bb0640d85/run")
     suspend fun runWorkflow(
+		@Header("Authorization") token: String,
         @Body payload: WorkflowPayload
     ): WorkflowResponse
 }
