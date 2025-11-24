@@ -1,11 +1,16 @@
 package com.cloudstaff.myapplication.ui
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
+import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Point
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.os.Looper
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
@@ -19,10 +24,19 @@ import com.cloudstaff.myapplication.utils.http.Http
 import com.cloudstaff.myapplication.utils.http.hasInternetConnection
 import com.cloudstaff.myapplication.utils.prefs.PrefsHelper
 import com.cloudstaff.myapplication.utils.retrofit.Inputs
+import com.cloudstaff.myapplication.utils.retrofit.Locations
 import com.cloudstaff.myapplication.utils.retrofit.Payload
+import com.cloudstaff.myapplication.utils.retrofit.PointsOfInterest
 import com.cloudstaff.myapplication.utils.retrofit.api
+import com.cloudstaff.myapplication.utils.toast
+import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationSettingsRequest
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -36,7 +50,6 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -52,7 +65,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	private var currentLatLng: LatLng? = null
 
 
-
 	private lateinit var binding: ActivityMainBinding
 
 	override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,9 +72,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 		binding = ActivityMainBinding.inflate(layoutInflater)
 		setContentView(binding.root)
-
-		// set token here
-		Http.bearerToken = "app-RUajyaiMG0aoPHM4bWRMpNTW"
 
 		fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
@@ -73,6 +82,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		prefs = PrefsHelper(this)
 
 		setupClickListeners()
+	}
+
+	override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+		super.onActivityResult(requestCode, resultCode, data)
+
+		if (requestCode == 999) {
+			if (resultCode == Activity.RESULT_OK) {
+				enableMyLocation()
+			} else {
+				toast("GPS is required")
+			}
+		}
 	}
 
 	private fun setupClickListeners() {
@@ -132,41 +153,77 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 	private fun requestLocationPermission() {
 		if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-			!= PackageManager.PERMISSION_GRANTED) {
+			!= PackageManager.PERMISSION_GRANTED
+		) {
 			ActivityCompat.requestPermissions(
 				this,
 				arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
 				LOCATION_PERMISSION_REQUEST_CODE
 			)
 		} else {
-			enableMyLocation()
+			checkLocationSettings()
 		}
 	}
 
 	override fun onRequestPermissionsResult(
-		requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+		requestCode: Int, permissions: Array<out String>, grantResults: IntArray,
 	) {
 		super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 		if (requestCode == LOCATION_PERMISSION_REQUEST_CODE &&
 			grantResults.isNotEmpty() &&
-			grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+			grantResults[0] == PackageManager.PERMISSION_GRANTED
+		) {
 			enableMyLocation()
 		}
 	}
 
 	private fun enableMyLocation() {
 		if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-			== PackageManager.PERMISSION_GRANTED) {
+			== PackageManager.PERMISSION_GRANTED
+		) {
 			gmap.isMyLocationEnabled = true
 
 			fusedLocationClient.lastLocation.addOnSuccessListener { location ->
 				if (location != null) {
 					currentLatLng = LatLng(location.latitude, location.longitude)
-					gmap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng ?: return@addOnSuccessListener, 15f))
+					gmap.animateCamera(
+						CameraUpdateFactory
+							.newLatLngZoom(currentLatLng ?: return@addOnSuccessListener, 16f)
+					)
+				} else {
+					requestSingleLocation()
 				}
 			}
 		}
 	}
+
+	@SuppressLint("MissingPermission")
+	private fun requestSingleLocation() {
+		val request = LocationRequest.Builder(
+			Priority.PRIORITY_HIGH_ACCURACY,
+			2000
+		).setMaxUpdates(1).build()
+
+		val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+		fusedLocationClient.requestLocationUpdates(
+			request,
+			object : LocationCallback() {
+				override fun onLocationResult(result: LocationResult) {
+					val location = result.lastLocation ?: return
+					val myLatLng = LatLng(location.latitude, location.longitude)
+
+					gmap.animateCamera(
+						CameraUpdateFactory.newLatLngZoom(myLatLng, 16f)
+					)
+
+					fusedLocationClient.removeLocationUpdates(this)
+				}
+			},
+			Looper.getMainLooper()
+		)
+	}
+
 
 	private fun fetchEvacCenters() {
 		if (hasInternetConnection(this)) {
@@ -310,7 +367,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	suspend fun getRouteNewApi(
 		origin: LatLng,
 		destination: LatLng,
-		apiKey: String
+		apiKey: String,
 	): List<LatLng> = withContext(Dispatchers.IO) {
 
 		val url = "https://routes.googleapis.com/directions/v2:computeRoutes"
@@ -395,9 +452,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		lifecycleScope.launch {
 			val origin = currentLatLng ?: return@launch
 
-			val points = getRouteNewApi(origin, destination, "AIzaSyAkX3ogSvySOQhOkFWzDY7HogRHx_7cbsw")
+			val points =
+				getRouteNewApi(origin, destination, "AIzaSyAkX3ogSvySOQhOkFWzDY7HogRHx_7cbsw")
 			if (points.isEmpty()) {
-				Toast.makeText(this@MainActivity, "Empty route", Toast.LENGTH_SHORT).show()
+				toast("Error in calculating route, please try again")
 				return@launch
 			}
 
@@ -424,7 +482,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	}
 
 	private fun showLocationsBottomSheet(evac: Locations) {
-		println("Showing bottom sheet $evac")
 		val dialog = BottomSheetDialog(this)
 		val view = layoutInflater.inflate(R.layout.bottom_sheet, null)
 
@@ -439,47 +496,38 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		dialog.show()
 	}
 
+	private fun checkLocationSettings() {
+		val locationRequest = LocationRequest.Builder(
+			Priority.PRIORITY_HIGH_ACCURACY,
+			1000
+		).build()
+
+		val settingsRequest = LocationSettingsRequest.Builder()
+			.addLocationRequest(locationRequest)
+			.setAlwaysShow(true)   // IMPORTANT: forces the dialog to show
+			.build()
+
+		val settingsClient = LocationServices.getSettingsClient(this)
+
+		settingsClient.checkLocationSettings(settingsRequest)
+			.addOnSuccessListener {
+				toast("Fetching your location...")
+				enableMyLocation()
+			}
+			.addOnFailureListener { exception ->
+				if (exception is ResolvableApiException) {
+					try {
+						exception.startResolutionForResult(
+							this,
+							999  // REQUEST_CODE
+						)
+					} catch (sendEx: IntentSender.SendIntentException) {
+						sendEx.printStackTrace()
+					}
+				} else {
+					toast("Location is turned off")
+				}
+			}
+	}
+
 }
-
-@Serializable
-data class DifyResponse(
-	val data: DifyData,
-)
-@Serializable
-data class DifyData(
-	val outputs: Area,
-)
-@Serializable
-data class Area(
-	val area: String,
-)
-
-@Serializable
-data class PointsOfInterest(
-	val nearest_evacuation_centers: List<Locations>? = null,
-	val relief_goods_centers: List<Locations>? = null,
-	val hospitals: List<Locations>? = null,
-)
-@Serializable
-data class Locations(
-	val building: String,
-	val address: String,
-	val coordinates: Coordinates,
-	val distance_km: Double,
-)
-@Serializable
-data class Coordinates(
-	val lat: Double,
-	val lng: Double,
-)
-
-//		lifecycleScope.launch {
-//			@Serializable data class SampleItems(val id: String, val name: String)
-//
-//			val response: List<SampleItems> = Http.getJson("https://api.restful-api.dev/objects")
-//
-//			ListViewHelper.setup(
-//				listView = binding.lvSample,
-//				items = response
-//			)
-//		}

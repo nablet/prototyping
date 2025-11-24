@@ -1,16 +1,15 @@
 package com.cloudstaff.myapplication.utils.retrofit
 
-import com.cloudstaff.myapplication.ui.DifyResponse
-import retrofit2.http.Body
-import retrofit2.http.Headers
-import retrofit2.http.POST
 
-
-import okhttp3.OkHttpClient
+import kotlinx.serialization.Serializable
 import okhttp3.Interceptor
+import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
+import retrofit2.http.Headers
+import retrofit2.http.POST
 
 // Optional: Add bearer token automatically
 val token = "app-RUajyaiMG0aoPHM4bWRMpNTW"
@@ -56,4 +55,36 @@ data class Inputs(
 data class Payload(
 	val inputs: Inputs,
 	val user: String
+)
+
+@Serializable
+data class DifyResponse(
+	val data: DifyData,
+)
+@Serializable
+data class DifyData(
+	val outputs: Area,
+)
+@Serializable
+data class Area(
+	val area: String,
+)
+
+@Serializable
+data class PointsOfInterest(
+	val nearest_evacuation_centers: List<Locations>? = null,
+	val relief_goods_centers: List<Locations>? = null,
+	val hospitals: List<Locations>? = null,
+)
+@Serializable
+data class Locations(
+	val building: String,
+	val address: String,
+	val coordinates: Coordinates,
+	val distance_km: Double,
+)
+@Serializable
+data class Coordinates(
+	val lat: Double,
+	val lng: Double,
 )

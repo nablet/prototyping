@@ -2,7 +2,7 @@ package com.cloudstaff.myapplication.utils.prefs
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.cloudstaff.myapplication.ui.Locations
+import com.cloudstaff.myapplication.utils.retrofit.Locations
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
