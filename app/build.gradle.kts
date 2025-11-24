@@ -19,6 +19,7 @@ android {
 		versionName = "1.0"
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+		buildConfigField("String", "MAPS_API_KEY", "\"AIzaSyAkX3ogSvySOQhOkFWzDY7HogRHx_7cbsw\"")
 	}
 
 	buildTypes {
@@ -40,6 +41,7 @@ android {
 	buildFeatures {
 		compose = true
 		viewBinding = true
+		buildConfig = true
 	}
 }
 
@@ -53,6 +55,7 @@ dependencies {
 	implementation(libs.androidx.compose.ui.tooling.preview)
 	implementation(libs.androidx.compose.material3)
 	implementation(libs.play.services.location)
+	implementation(libs.material)
 	testImplementation(libs.junit)
 	androidTestImplementation(libs.androidx.junit)
 	androidTestImplementation(libs.androidx.espresso.core)
@@ -73,5 +76,13 @@ dependencies {
 	implementation("com.google.android.gms:play-services-maps:18.2.0")
 	implementation("com.google.code.gson:gson:2.10.1")
 
+
+	implementation("com.squareup.retrofit2:retrofit:2.9.0")
+	implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+// JSON parsing
+	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+// coroutines
+	implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.11")
+// optional
 
 }
