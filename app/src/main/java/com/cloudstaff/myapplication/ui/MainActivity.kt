@@ -328,7 +328,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	}
 
 	private fun fetchEvacCenters() {
-		gmap.clear()
 		if (hasInternetConnection(this)) {
 			lifecycleScope.launch {
 				binding.prb.visibility = View.VISIBLE
@@ -358,7 +357,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	}
 
 	private fun fetchReliefGoodsOps() {
-		gmap.clear()
 		if (hasInternetConnection(this)) {
 			lifecycleScope.launch {
 				binding.prb.visibility = View.VISIBLE
@@ -388,7 +386,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 	}
 
 	private fun fetchHospitals() {
-		gmap.clear()
 		if (hasInternetConnection(this)) {
 			lifecycleScope.launch {
 				binding.prb.visibility = View.VISIBLE
@@ -454,6 +451,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 		val boundsBuilder = LatLngBounds.Builder()
 
+		if (locations.isNotEmpty()) {
+			gmap.clear()
+		}
+
 		locations.forEach { loc ->
 			val position = LatLng(loc.coordinates.lat, loc.coordinates.lng)
 
@@ -461,8 +462,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 			val markerIcon = createMarkerWithTextAndPin(
 				text = loc.name ?: loc.building ?: "-",
 				pinResId = R.drawable.google_maps_pin,
-				pinWidth = 80,
-				pinHeight = 80
+				pinWidth = 100,
+				pinHeight = 100
 			)
 
 			val marker = gmap.addMarker(
@@ -487,7 +488,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		// Paint for text
 		val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
 			color = Color.BLACK
-			textSize = 40f
+			textSize = 35f
 			typeface = Typeface.DEFAULT_BOLD
 			textAlign = Paint.Align.CENTER
 		}
