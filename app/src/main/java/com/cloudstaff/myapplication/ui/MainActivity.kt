@@ -3,8 +3,11 @@ package com.cloudstaff.myapplication.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.Point
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -29,6 +32,7 @@ import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -94,11 +98,24 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 			val evac = marker.tag as? Locations ?: return@setOnMarkerClickListener false
 			val destination = LatLng(evac.coordinates.lat, evac.coordinates.lng)
 
+			// Draw route
 			drawRouteTo(destination)
+
+			// Show info window
 			marker.showInfoWindow()
+			showLocationsBottomSheet(evac)
+
+			// Move camera so info window is fully visible
+			val offsetPixels = 150 // adjust based on info window height
+			val projection = gmap.projection
+			val markerPoint = projection.toScreenLocation(marker.position)
+			val targetPoint = Point(markerPoint.x, markerPoint.y - offsetPixels)
+			val targetLatLng = projection.fromScreenLocation(targetPoint)
+			gmap.animateCamera(CameraUpdateFactory.newLatLng(targetLatLng))
 
 			false
 		}
+
 
 
 		gmap.setOnInfoWindowClickListener { marker ->
@@ -326,10 +343,25 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 				.include(destination)
 				.build()
 
-			gmap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100))
+			gmap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200))
 		}
 	}
 
+	private fun showLocationsBottomSheet(evac: Locations) {
+		println("Showing bottom sheet $evac")
+		val dialog = BottomSheetDialog(this)
+		val view = layoutInflater.inflate(R.layout.bottom_sheet, null)
+
+		dialog.window?.setDimAmount(0f)
+		dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+		view.findViewById<TextView>(R.id.txtBuilding).text = evac.building
+		view.findViewById<TextView>(R.id.txtAddress).text = evac.address
+		view.findViewById<TextView>(R.id.txtDistance).text = "${evac.distance_km} km away"
+
+		dialog.setContentView(view)
+		dialog.show()
+	}
 
 }
 
