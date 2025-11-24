@@ -88,9 +88,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 			if (isGranted) {
 				// Permission granted
 				Log.d("MainActivity", "Notification permission granted")
+				requestLocationPermission()
 			} else {
 				// Permission denied
 				Log.d("MainActivity", "Notification permission denied")
+				requestLocationPermission()
 			}
 		}
 
@@ -263,6 +265,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 			== PackageManager.PERMISSION_GRANTED
 		) {
 			gmap.isMyLocationEnabled = true
+			toast("Fetching your location...", Toast.LENGTH_SHORT)
 
 			fusedLocationClient.lastLocation.addOnSuccessListener { location ->
 				if (location != null) {
@@ -680,7 +683,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 		settingsClient.checkLocationSettings(settingsRequest)
 			.addOnSuccessListener {
-				toast("Fetching your location...", Toast.LENGTH_SHORT)
 				enableMyLocation()
 			}
 			.addOnFailureListener { exception ->

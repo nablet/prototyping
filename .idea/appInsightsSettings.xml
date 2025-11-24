@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.cloudstaff.myapplication" />
+                  <option name="mobileSdkAppId" value="1:533501567596:android:282e32402e245e86c8ae49" />
+                  <option name="projectId" value="hackaton-2025-cf930" />
+                  <option name="projectNumber" value="533501567596" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
