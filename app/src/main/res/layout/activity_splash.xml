@@ -39,7 +39,7 @@
         android:layout_height="wrap_content"
         android:fontFamily="@font/poppins_regular"
         android:scrollbars="vertical"
-        android:text="When Crisis Strikes, a Compass Guides"
+        android:text="When Crisis Strikes, A Compass Guides"
         android:textColor="#FFFFFF"
         android:textSize="12sp"
         android:visibility="visible"

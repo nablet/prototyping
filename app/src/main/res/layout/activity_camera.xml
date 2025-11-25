@@ -11,14 +11,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-<!--    <ScrollView-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:fillViewport="true"-->
-<!--        app:layout_constraintBottom_toBottomOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintTop_toTopOf="parent">-->
 
     <!-- Captured Image Preview -->
     <ImageView
@@ -31,54 +23,30 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/tvWorkflowResult"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/poppins_regular"
-        android:padding="16dp"
-        android:scrollbars="vertical"
-        android:text=""
-        android:textColor="#525252"
-        android:textSize="14sp"
-        android:visibility="visible"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/capturedImage" />
+        app:layout_constraintTop_toBottomOf="@+id/capturedImage">
 
-<!--        <LinearLayout-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_marginStart="10dp"-->
-<!--            android:layout_marginTop="10dp"-->
-<!--            android:orientation="vertical">-->
+        <TextView
+            android:id="@+id/tvWorkflowResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_regular"
+            android:padding="16dp"
+            android:scrollbars="vertical"
+            android:text=""
+            android:textColor="#525252"
+            android:textSize="14sp"
+            android:visibility="visible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/capturedImage" />
 
-<!--            &lt;!&ndash; Captured Image Preview &ndash;&gt;-->
-<!--&lt;!&ndash;            <ImageView&ndash;&gt;-->
-<!--&lt;!&ndash;                android:id="@+id/capturedImage"&ndash;&gt;-->
-<!--&lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
-<!--&lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
-<!--&lt;!&ndash;                android:visibility="visible" />&ndash;&gt;-->
-
-<!--            &lt;!&ndash; Api Result&ndash;&gt;-->
-
-<!--            <TextView-->
-<!--                android:id="@+id/tvWorkflowResult"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:padding="16dp"-->
-<!--                android:scrollbars="vertical"-->
-<!--                android:text=""-->
-<!--                android:textColor="#525252"-->
-<!--                android:textSize="16sp"-->
-<!--                android:visibility="visible"-->
-<!--                android:fontFamily="@font/poppins_regular"-->
-<!--                app:layout_constraintBottom_toBottomOf="parent"-->
-<!--                app:layout_constraintStart_toStartOf="parent" />-->
-
-<!--        </LinearLayout>-->
-
-<!--    </ScrollView>-->
+    </ScrollView>
 
     <!-- Capture Button -->
     <ImageButton
