@@ -86,7 +86,7 @@ data class Area(
 
 @Serializable
 data class PointsOfInterest(
-	val nearest_evacuation: List<Locations>? = null,
+	val nearest_evacuations: List<Locations>? = null,
 	val nearest_relief_goods: List<Locations>? = null,
 	val nearest_hospitals: List<Locations>? = null,
 )

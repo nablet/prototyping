@@ -4,6 +4,7 @@ plugins {
 	alias(libs.plugins.kotlin.compose)
 	id("org.jetbrains.kotlin.plugin.serialization") version "2.2.21"
 	id("com.google.gms.google-services")
+	id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -89,5 +90,7 @@ dependencies {
 
 	implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
 	implementation("com.google.firebase:firebase-messaging")
+	implementation("com.google.firebase:firebase-crashlytics")
+	implementation("com.google.firebase:firebase-analytics")
 
 }

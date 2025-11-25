@@ -212,6 +212,7 @@ class CameraActivity : AppCompatActivity() {
             // Update the TextView on the main thread using binding
             withContext(Dispatchers.Main) {
                 binding.tvWorkflowResult.text = resultText
+				binding.tvWorkflowResult.visibility = View.VISIBLE
             }
 
             displayOutput()
