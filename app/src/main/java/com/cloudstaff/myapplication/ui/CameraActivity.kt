@@ -137,6 +137,9 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun submitPhoto() {
+        binding.btnSubmit.visibility = View.GONE
+        binding.btnRetake.visibility = View.GONE
+
         capturedImageFile?.let { file ->
             Toast.makeText(this, "Photo submitted: ${file.name}", Toast.LENGTH_SHORT).show()
 
