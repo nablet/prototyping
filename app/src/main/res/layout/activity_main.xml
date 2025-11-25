@@ -71,19 +71,20 @@
         </LinearLayout>
     </HorizontalScrollView>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <ImageView
         android:id="@+id/fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:contentDescription="Debug"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_margin="20dp"
+        android:padding="16dp"
+        android:paddingBottom="23dp"
+        android:paddingEnd="17dp"
+        android:background="@drawable/bg_fab"
         android:src="@drawable/ic_camera"
-        android:backgroundTint="@color/material_dynamic_primary30"
-        app:backgroundTint="@color/teal_700"
-        app:layout_anchorGravity="bottom|end"
+        android:tint="@android:color/white"
+        android:contentDescription="Debug button"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:tint="@android:color/white" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <ProgressBar
         android:id="@+id/prb"
