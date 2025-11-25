@@ -65,6 +65,7 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -106,6 +107,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 		binding = ActivityMainBinding.inflate(layoutInflater)
 		setContentView(binding.root)
 
+		FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = true
 		FirebaseMessaging.getInstance().token
 			.addOnCompleteListener { task ->
 				if (!task.isSuccessful) {
@@ -341,9 +343,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 				try {
 					val data = fetchPointsOfInterest(
 						currentLatLng = currentLatLng,
-						type = "evacuation"
+						type = "evacuations"
 					)
-					val evacCenters = data.nearest_evacuation ?: return@launch
+					val evacCenters = data.nearest_evacuations ?: return@launch
 
 					prefs.clearEvacuationCenters()
 					prefs.addEvacuationCenters(evacCenters)
