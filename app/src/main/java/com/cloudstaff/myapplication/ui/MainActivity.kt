@@ -168,6 +168,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 			showOccupants = true
 			fetchHospitals()
 		}
+
+		binding.fab.setOnClickListener {
+			val intent = Intent(this, CameraActivity::class.java)
+			startActivity(intent)
+		}
 	}
 
 	override fun onMapReady(googleMap: GoogleMap) {
@@ -178,7 +183,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 			uiSettings.isMyLocationButtonEnabled = true
 			uiSettings.isRotateGesturesEnabled = true
 			uiSettings.isTiltGesturesEnabled = true
-			setPadding(0, 80.dpToPx(), 0, 0)
+			setPadding(0, 80.dpToPx(), 0, 250)
 
 			if (ContextCompat.checkSelfPermission(
 					this@MainActivity,
